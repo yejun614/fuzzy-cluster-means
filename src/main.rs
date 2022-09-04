@@ -1,4 +1,3 @@
-
 use fuzzy_cluster_means::app::App;
 
 fn main() {
