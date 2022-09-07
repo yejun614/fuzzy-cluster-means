@@ -2,9 +2,10 @@
 
 use eframe;
 use egui;
-use egui::plot::{Plot, PlotPoints, Points};
+use egui::plot::{Plot, PlotPoints, Points, MarkerShape};
 
-use super::cluster::Cluster;
+// use super::cluster::Cluster;
+use super::fcm_cluster::FcmCluster;
 use super::math::Vector2;
 use super::read_csv;
 
@@ -18,7 +19,9 @@ pub struct App {
     centroid_placement_method: usize,
     cluster_max_loop: usize,
     cluster_goal_diff: f64,
-    pub cluster: Cluster,
+    prev_centroids: Vec<Vector2>,
+    current_turn: usize,
+    pub cluster: FcmCluster,
 }
 
 impl Default for App {
@@ -33,7 +36,9 @@ impl Default for App {
             centroid_placement_method: 0,
             cluster_max_loop: 300,
             cluster_goal_diff: 0.0,
-            cluster: Cluster::default(),
+            prev_centroids: Vec::<Vector2>::new(),
+            current_turn: 0,
+            cluster: FcmCluster::default(),
         }
     }
 }
@@ -146,6 +151,8 @@ impl eframe::App for App {
 
                 if self.dataset.len() > 0 {
                     if ui.button("Cluster Reset").clicked() {
+                        self.current_turn = 0;
+                        self.prev_centroids = vec![Vector2::new(0.0, 0.0); self.centroid_len];
                         let start_index = if self.dataset_skip_header { 1 } else { 0 };
 
                         self.cluster.data = (start_index..self.dataset.len())
@@ -174,7 +181,13 @@ impl eframe::App for App {
                     }
 
                     if ui.button("Fit Once").clicked() {
-                        self.cluster.fit_once();
+                        self.current_turn += 1;
+
+                        if self.current_turn % 2 == 0 {
+                            self.cluster.fit_once();
+                        } else {
+                            self.prev_centroids = self.cluster.centroids.clone();
+                        }
                     }
                 }
             });
@@ -187,7 +200,10 @@ impl eframe::App for App {
             let centroids: PlotPoints = (0..centroid_len)
                 .map(|i| [self.cluster.centroids[i].x, self.cluster.centroids[i].y])
                 .collect();
-            let centroid_points = Points::new(centroids).radius(5.0);
+            let centroid_points = Points::new(centroids)
+                .shape(MarkerShape::Asterisk)
+                .radius(8.0)
+                .name("Centroid");
 
             let mut data: Vec<Vec<Vector2>> = vec![vec![Vector2::new(0.0, 0.0); 0]; centroid_len];
 
@@ -196,7 +212,7 @@ impl eframe::App for App {
                 let mut centroid_index = 0;
 
                 for m in 0..centroid_len {
-                    let current = self.cluster.data[n].distance(&self.cluster.centroids[m]);
+                    let current = self.cluster.data[n].distance(&self.prev_centroids[m]);
 
                     if current < distance {
                         distance = current;
@@ -207,18 +223,19 @@ impl eframe::App for App {
                 data[centroid_index].push(self.cluster.data[n]);
             }
 
-            Plot::new("main_plot").show(ui, |plot_ui| {
-                for n in 0..centroid_len {
-                    let plot_points: PlotPoints = (0..data[n].len())
-                        .map(|i| [data[n][i].x, data[n][i].y])
-                        .collect();
-                    let points = Points::new(plot_points).radius(5.0);
+            Plot::new("main_plot")
+                .show(ui, |plot_ui| {
+                    for n in 0..centroid_len {
+                        let plot_points: PlotPoints = (0..data[n].len())
+                            .map(|i| [data[n][i].x, data[n][i].y])
+                            .collect();
+                        let points = Points::new(plot_points).radius(5.0);
 
-                    plot_ui.points(points);
-                }
+                        plot_ui.points(points);
+                    }
 
-                plot_ui.points(centroid_points);
-            });
+                    plot_ui.points(centroid_points);
+                });
         });
     }
 }

@@ -1,6 +1,7 @@
 pub mod app;
-pub mod cluster;
 pub mod math;
+pub mod cluster;
+pub mod fcm_cluster;
 
 use std::fs::File;
 use std::io::prelude::*;
