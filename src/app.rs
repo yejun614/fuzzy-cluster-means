@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // Hide console window on Windows in release
+
 use eframe;
 use egui;
 use egui::plot::{Plot, PlotPoints, Points};
