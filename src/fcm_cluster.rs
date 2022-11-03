@@ -59,12 +59,17 @@ impl FcmCluster {
         }
     }
 
-    pub fn fit(&mut self, max_loop: usize, goal_diff: f64) {
+    pub fn fit(&mut self, max_loop: usize, goal_diff: f64) -> usize {
+        let mut count = 0;
         for _n in 0..max_loop {
+            count += 1;
+
             if self.fit_once() <= goal_diff {
                 break;
             }
         }
+
+        count
     }
 
     pub fn fit_once(&mut self) -> f64 {
