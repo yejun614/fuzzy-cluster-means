@@ -176,8 +176,10 @@ impl eframe::App for App {
                     }
 
                     if ui.button("Fit Auto").clicked() {
-                        self.cluster
-                            .fit(self.cluster_max_loop, self.cluster_goal_diff);
+                        self.current_turn += self.cluster.fit(self.cluster_max_loop, self.cluster_goal_diff);
+
+                        // for point highlights
+                        self.prev_centroids = self.cluster.centroids.clone();
                     }
 
                     if ui.button("Fit Once").clicked() {
